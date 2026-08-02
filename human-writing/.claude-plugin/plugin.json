@@ -1,0 +1,16 @@
+{
+  "name": "human-writing",
+  "version": "1.0.0",
+  "description": "Write and edit prose that reads like a person wrote it. Eleven principles, 30 AI tells with rewrites, whole-piece structure checks, per-register guidance, and four voice profiles.",
+  "author": {
+    "name": "Vitalii Ratushnyi"
+  },
+  "keywords": [
+    "writing",
+    "editing",
+    "prose",
+    "style",
+    "copywriting",
+    "documentation"
+  ]
+}
