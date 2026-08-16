@@ -33,6 +33,7 @@ Rewrite this intro — it sounds like AI.
 Make this email less corporate.
 Here are three of my old posts. Write the next one in my voice.
 Write this in Benedict Evans's register.
+Explain how the tariff actually works. Economist style, no hedging.
 ```
 
 It stays out of the way for things that should stay mechanical: changelogs, commit
@@ -48,7 +49,7 @@ messages, API reference tables, legal boilerplate.
 | [`references/concrete-without-inventing.md`](human-writing/skills/human-writing/references/concrete-without-inventing.md) | Where real detail comes from, and what to do when you have none. |
 | [`references/registers.md`](human-writing/skills/human-writing/references/registers.md) | READMEs, work email, landing copy, newsletters, threads, talks. |
 | [`references/revision-checklist.md`](human-writing/skills/human-writing/references/revision-checklist.md) | Run before delivering. |
-| [`references/voice-*.md`](human-writing/skills/human-writing/references) | House blend (default), Paul Graham, Benedict Evans, Henrik Karlsson, and a procedure for matching your own writing. |
+| [`references/voice-*.md`](human-writing/skills/human-writing/references) | House blend (default), Paul Graham, Benedict Evans, Henrik Karlsson, the Analyst (*Economist*/Bloomberg register), and a procedure for matching your own writing. |
 | [`scripts/rhythm.py`](human-writing/skills/human-writing/scripts/rhythm.py) | Measures sentence-length spread against measured baselines. |
 | [`examples/`](human-writing/skills/human-writing/examples) | A worked example, with notes on where it still fails. |
 
