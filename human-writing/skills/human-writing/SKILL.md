@@ -7,7 +7,8 @@ description: >-
   any non-code prose meant for human readers, and especially when asked to make
   writing "sound human," "less like AI," "less generic," "less corporate," or
   "more like me," or to write in the voice of Paul Graham, Benedict Evans, or
-  Henrik Karlsson. Built from close analysis of 700+ of their essays.
+  Henrik Karlsson, or in a restrained Economist/Bloomberg analyst register.
+  Built from close analysis of 700+ of their essays.
 ---
 
 # Human writing
@@ -195,8 +196,9 @@ If you can delete a sentence and lose no information, it was an AI tell. Delete 
 
 ## Pick a voice
 
-The **house blend is the default** — reach for a single-writer register only when
-the piece genuinely calls for that stamp. All four are built on the eleven principles.
+The **house blend is the default** — reach for a named register only when
+the piece genuinely calls for that stamp. All five are built on the eleven principles,
+with one exception noted below.
 Full profiles — with mechanics, signature devices, DO/DON'T lists, and real
 excerpts — are in `references/`. **If you have the writer's essays available, read
 one or two before imitating.**
@@ -207,6 +209,19 @@ one or two before imitating.**
 | **Paul Graham** | Plain, conversational, contrarian. Short punchy sentences, first person, coined concepts, aphoristic turns. | Essays and arguments that make a counterintuitive point feel obvious in hindsight; advice; opinion. | `references/voice-paul-graham.md` |
 | **Benedict Evans** | Dry, British, analyst-not-advocate. Long clause-stacked sentences, stacked rhetorical questions, historical analogy, deep epistemic humility. | Tech/business/strategy analysis; "ways to think about X"; anything where the honest answer is "it's not that simple." | `references/voice-benedict-evans.md` |
 | **Henrik Karlsson** | Literary, personal, searching. Narrative and scene openings, extended metaphor, woven quotation, essay-as-inquiry. | Reflective/personal essays; ideas about mind, craft, and life; pieces that move through a story toward an insight. | `references/voice-henrik-karlsson.md` |
+| **The Analyst** | Unbylined *Economist* / Bloomberg staff analyst. Thesis first, mechanism shown, exact numbers, impersonal, present tense, paragraphs landing on a short line. | Explaining how something works to someone who has to act on it; market, strategy, and policy pieces; briefs and memos. Also when the user says "analyst voice," "Economist style," or "restrained and precise." | `references/voice-analyst.md` |
+
+**The Analyst overrides five of the eleven, on purpose.** It is the one register here
+that isn't a variation on the principles — it contradicts them. Principle 1 (write like
+you talk) and 9 (talk to the reader as a peer, use "I" and "you," ask a real question)
+are out: the register is impersonal and asks nothing. Principle 3's qualifiers ("I
+think," "as far as I can tell") are out; state the claim flat or cut it. Principle 5
+(think on the page, let the piece discover something) is out; the thesis is settled
+before the first sentence. Principle 10's outward-turning close is out; the ending
+resolves. Everything else carries — plain words, concrete over abstract, cut
+relentlessly, rhythm through variation, no throat-clearing, excitement at zero. Don't
+mix the two halves. A piece that is impersonal for four paragraphs and then asks the
+reader a question has neither voice.
 
 **How to blend, concretely.** The house blend isn't an average of the three and
 isn't the three taking turns — it gives each writer a different *layer* of the same
@@ -241,6 +256,7 @@ principles disagree, the profile wins. It's their voice, not the skill's.
 | `references/revision-checklist.md` | Before delivering. Every time. |
 | `references/voice-house-blend.md` | The default voice, with a six-pass transform. |
 | `references/voice-paul-graham.md`, `-benedict-evans.md`, `-henrik-karlsson.md` | The user named a writer. |
+| `references/voice-analyst.md` | Restrained, impersonal, thesis-first explanation. *Economist* / Bloomberg register. |
 | `references/voice-from-sample.md` | The user wants their own voice. |
 | `scripts/rhythm.py` | Measure sentence-length spread instead of guessing at it. |
 
