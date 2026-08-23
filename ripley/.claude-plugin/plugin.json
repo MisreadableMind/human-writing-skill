@@ -1,7 +1,7 @@
 {
   "name": "ripley",
-  "version": "1.0.0",
-  "description": "Write and edit prose that reads like a person wrote it. Eleven principles, 30 AI tells with rewrites, whole-piece structure checks, per-register guidance, and five voice profiles.",
+  "version": "2.0.0",
+  "description": "Write and edit prose that reads like a person wrote it, then measure whether it does. Eleven principles, 30 AI tells with rewrites, whole-piece structure checks, five voice profiles, and a dependency-free linter with a browser app.",
   "author": {
     "name": "Vitalii Ratushnyi"
   },
@@ -11,6 +11,8 @@
     "prose",
     "style",
     "copywriting",
-    "documentation"
+    "documentation",
+    "linter",
+    "text-analysis"
   ]
 }
