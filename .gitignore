@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .idea/
 .claude/settings.local.json
+ripley/skills/ripley/tests/oracle-report.json
