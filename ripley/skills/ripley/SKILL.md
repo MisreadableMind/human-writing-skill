@@ -1,5 +1,5 @@
 ---
-name: human-writing
+name: ripley
 description: >-
   Write and edit prose that reads like a thoughtful person wrote it, not a
   language model — essays, blog posts, newsletters, emails, docs, READMEs,
@@ -11,7 +11,7 @@ description: >-
   Built from close analysis of 700+ of their essays.
 ---
 
-# Human writing
+# Ripley
 
 Most machine-written prose fails the same way: it is grammatical, organized, and
 dead. It hedges everything, states nothing, decorates instead of arguing, and
@@ -22,6 +22,9 @@ reading*.
 
 The whole target, in one line from Paul Graham: **don't let a sentence through
 unless it's the way you'd say it to a friend.**
+
+Named for Patricia Highsmith's Tom Ripley, who studied people until he could pass
+for them. Same job, narrower crime.
 
 ## When to use this
 

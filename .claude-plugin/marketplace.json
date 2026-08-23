@@ -5,8 +5,8 @@
   },
   "plugins": [
     {
-      "name": "human-writing",
-      "source": "./human-writing",
+      "name": "ripley",
+      "source": "./ripley",
       "description": "Write and edit prose that reads like a person wrote it, not a language model. Essays, docs, READMEs, emails, landing copy, talks, threads."
     }
   ]

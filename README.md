@@ -1,8 +1,11 @@
-# human-writing
+# ripley
 
 A Claude Code skill for prose that reads like a person wrote it — essays, blog posts,
 newsletters, emails, docs, READMEs, landing copy, talks, threads. It distills how three
 working essayists actually write, from close analysis of 700+ of their essays.
+
+Named for Patricia Highsmith's Tom Ripley, who studied people until he could pass for
+them. Same job, narrower crime.
 
 It ships as one plugin in a marketplace named `vitalii-skills`.
 
@@ -10,14 +13,14 @@ It ships as one plugin in a marketplace named `vitalii-skills`.
 
 ```
 /plugin marketplace add MisreadableMind/human-writing-skill
-/plugin install human-writing@vitalii-skills
+/plugin install ripley@vitalii-skills
 ```
 
 Restart Claude Code. To install from a local clone instead:
 
 ```
-/plugin marketplace add /path/to/human-writing-skill
-/plugin install human-writing@vitalii-skills
+/plugin marketplace add /path/to/this/repo
+/plugin install ripley@vitalii-skills
 ```
 
 Run `/plugin` to check it's enabled.
