@@ -1,0 +1,79 @@
+{
+  "note": "Deterministic expectations. The 'human' files are hand-written to avoid the listed tells; they test for false positives, not for humanness. Nothing here needs a network.",
+  "cases": [
+    {
+      "file": "../examples/counting-sentences.md",
+      "lang": "en",
+      "rhythm": { "sentences": 44, "paragraphs": 14, "spread": 0.63, "short": 38.6, "band": 40.9, "min": 2, "max": 36 },
+      "maxHardCategories": 1,
+      "mustNot": ["opener", "notjust", "weasel", "recap", "chatbot", "analogy"]
+    },
+    {
+      "file": "corpus/en-human.md",
+      "lang": "en",
+      "maxHardCategories": 1,
+      "mustNot": ["opener", "notjust", "weasel", "recap", "hedge", "excitement", "chatbot"]
+    },
+    {
+      "file": "corpus/en-model.md",
+      "lang": "en",
+      "minHardCategories": 8,
+      "verdict": "generated",
+      "must": {
+        "opener": "In today's rapidly evolving digital landscape",
+        "notjust": "not just about conveying information",
+        "inflation": "crucial",
+        "delve": "delve",
+        "hedge": "It's worth noting",
+        "weasel": "studies show",
+        "recap": "Ultimately",
+        "signpost": "Moreover",
+        "analogy": "Think of it like",
+        "pivot": "The catch?",
+        "ingtail": ", showcasing"
+      },
+      "layout": { "minFurnitureHeadings": 4, "minTitleCaseHeadings": 1 }
+    },
+    {
+      "file": "corpus/uk-model.md",
+      "lang": "uk",
+      "minHardCategories": 5,
+      "verdict": "generated",
+      "must": {
+        "opener": "У сучасному світі",
+        "notjust": "не просто",
+        "hedge": "Важливо зазначити",
+        "weasel": "дослідження показують",
+        "recap": "Підсумовуючи",
+        "analogy": "Уявіть собі"
+      },
+      "layout": { "minFurnitureHeadings": 3 }
+    },
+    {
+      "file": "corpus/uk-human.md",
+      "lang": "uk",
+      "maxHardCategories": 1,
+      "mustNot": ["opener", "weasel", "recap", "hedge", "analogy"]
+    },
+    {
+      "file": "corpus/ru-model.md",
+      "lang": "ru",
+      "minHardCategories": 5,
+      "verdict": "generated",
+      "must": {
+        "opener": "В современном мире",
+        "notjust": "не просто",
+        "hedge": "Важно отметить",
+        "weasel": "исследования показывают",
+        "recap": "Подводя итог",
+        "analogy": "Представьте себе"
+      }
+    },
+    {
+      "file": "corpus/de-human.md",
+      "lang": null,
+      "verdict": "unknown",
+      "noPack": true
+    }
+  ]
+}

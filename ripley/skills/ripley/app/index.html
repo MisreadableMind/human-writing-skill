@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ripley — prose check</title>
+<style>
+:root {
+  --bg: #fbfaf8; --panel: #ffffff; --ink: #1d1c1a; --mute: #6d6a66;
+  --line: #e3e0da; --accent: #1a1a1a; --hard: #b4341f; --soft: #a1741a;
+  --ok: #2f6b3f;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mark-l: 88%; --mark-s: 92%; --edge-l: 55%;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14140f; --panel: #1b1b16; --ink: #e9e6df; --mute: #9a968e;
+    --line: #2f2e28; --accent: #f0ede6; --hard: #ef7a63; --soft: #d9ab4e;
+    --ok: #79c48d;
+    --mark-l: 26%; --mark-s: 55%; --edge-l: 62%;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+header h1 { margin: 0; font-size: 17px; letter-spacing: -.01em; font-weight: 650; }
+header .sub { color: var(--mute); font-size: 13px; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; max-width: 46vw; }
+header .spacer { flex: 1; }
+button, label.file {
+  font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent; color: var(--ink);
+  cursor: pointer;
+}
+button:hover, label.file:hover { border-color: var(--mute); }
+button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+select { font: inherit; font-size: 13px; padding: 3px 6px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.lang { font: 11px/1 var(--mono); color: var(--mute); letter-spacing: .04em; }
+.lang b { color: var(--ink); font-weight: 600; }
+.warn { color: var(--soft); font-size: 13px; margin: 8px 0 0; }
+input[type=file] { display: none; }
+
+main { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,1fr); height: calc(100% - 53px); }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
+
+/* ---- editor: a highlight layer behind a transparent textarea ---- */
+.editor { position: relative; border-right: 1px solid var(--line); min-height: 320px; }
+@media (max-width: 900px) { .editor { border-right: 0; border-bottom: 1px solid var(--line); height: 60vh; } }
+.editor .layer, .editor textarea {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  margin: 0; padding: 22px 24px 60px;
+  font-family: var(--serif); font-size: 16.5px; line-height: 1.62;
+  letter-spacing: 0; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal;
+  border: 0; outline: none; tab-size: 4;
+}
+.editor .layer { overflow: auto; color: transparent; pointer-events: none; user-select: none; }
+.editor textarea { background: transparent; color: var(--ink); resize: none; caret-color: var(--ink); }
+.editor textarea::placeholder { color: var(--mute); }
+.editor .layer mark { color: transparent; background: none; border-radius: 2px; }
+.editor .layer mark.tell { background: hsl(var(--h) var(--mark-s) var(--mark-l)); }
+.editor .layer mark.sev-soft { background: hsl(var(--h) calc(var(--mark-s) - 30%) var(--mark-l)); }
+.editor .layer mark.pos { box-shadow: inset 0 -2px 0 hsl(var(--h) 70% var(--edge-l)); }
+.editor .layer mark.flash { outline: 2px solid var(--accent); }
+.count { position: absolute; right: 14px; bottom: 10px; font: 11px/1 var(--mono); color: var(--mute); }
+
+/* ---- strip: the essence pane and its cut marks ---- */
+main.strip { grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1.05fr); }
+@media (max-width: 1200px) { main.strip { grid-template-columns: 1fr; height: auto; } }
+.strippane { overflow: auto; border-right: 1px solid var(--line); min-height: 320px;
+  padding: 18px 24px 60px; background: var(--panel); }
+@media (max-width: 1200px) { .strippane { border-right: 0; border-bottom: 1px solid var(--line); } }
+.strippane .pane-h { font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--mute); margin: 0 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: baseline; gap: 10px; }
+.strippane .pane-h .spacer { flex: 1; }
+.strippane .essence { font-family: var(--serif); font-size: 16.5px; line-height: 1.62;
+  white-space: pre-wrap; overflow-wrap: break-word; }
+.strippane .essence.empty-out { color: var(--mute); font-family: var(--sans); font-size: 13px; }
+.editor .layer mark.cut { background: hsl(var(--h) var(--mark-s) var(--mark-l));
+  text-decoration: line-through; text-decoration-thickness: 1.5px;
+  text-decoration-color: hsl(var(--h) 70% var(--edge-l)); }
+.editor .layer mark.kept { box-shadow: inset 0 -2px 0 hsl(150 60% var(--edge-l)); }
+#levels { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 9px; }
+#levels button { font-size: 12px; }
+.lvl-note { margin: 0 0 10px; color: var(--mute); font-size: 12.5px; line-height: 1.55; }
+p.loss { margin: 0 0 12px; font-size: 13.5px; color: var(--mute); }
+p.loss b { color: var(--ink); }
+table.cmp th { font: 600 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--mute); text-align: right; padding-bottom: 6px; }
+table.cmp th:first-child { text-align: left; }
+table.cmp td.n, table.cmp td.d { text-align: right; font: 12px var(--mono);
+  white-space: nowrap; padding-left: 14px; }
+table.cmp td.d.up { color: var(--ok); }
+table.cmp td.d.down { color: var(--hard); }
+table.cmp td.d.flat { color: var(--mute); }
+.ledger { list-style: none; margin: 6px 0 0; padding: 0; }
+.ledger li { font-size: 13px; margin: 4px 0; display: flex; gap: 9px;
+  align-items: baseline; cursor: pointer; }
+.ledger li .tag { font: 10px var(--mono); text-transform: uppercase; letter-spacing: .05em;
+  color: var(--mute); flex: none; width: 84px; }
+.ledger li q { quotes: '"' '"'; }
+.ledger li.safe q { color: var(--mute); text-decoration: line-through; }
+.ledger li.judgment q { color: var(--soft); text-decoration: line-through; }
+.ledger li.kept q { color: var(--ok); }
+.ledger li .why { color: var(--mute); font-size: 12px; }
+.ledger li.empty { cursor: default; color: var(--mute); }
+
+/* ---- report ---- */
+.report { overflow: auto; padding: 18px 20px 60px; }
+.verdict { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+.badge {
+  font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 8px; border-radius: 5px; border: 1px solid currentColor;
+}
+.badge.generated, .badge.cluster { color: var(--hard); }
+.badge.style { color: var(--soft); }
+.badge.clean { color: var(--ok); }
+.badge.thin { color: var(--mute); }
+.verdict p { margin: 0; color: var(--mute); font-size: 13.5px; }
+h2 {
+  font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--mute); margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.cat { margin: 0 0 12px; }
+.cat .head { display: flex; align-items: baseline; gap: 8px; cursor: pointer; }
+.swatch { width: 11px; height: 11px; border-radius: 3px; background: hsl(var(--h) var(--mark-s) var(--mark-l)); flex: none; border: 1px solid hsl(var(--h) 40% var(--edge-l)); }
+.cat .name { font-weight: 600; }
+.cat .n { font: 12px var(--mono); color: var(--mute); }
+.cat .tellno { font: 11px var(--mono); color: var(--mute); margin-left: auto; }
+.cat ul { list-style: none; margin: 5px 0 0; padding: 0 0 0 19px; }
+.cat li { font-size: 13px; margin: 3px 0; cursor: pointer; color: var(--ink); }
+.cat li:hover q { text-decoration: underline; }
+.cat li .loc { font: 11px var(--mono); color: var(--mute); margin-right: 6px; }
+.cat li q { quotes: '"' '"'; }
+.cat li.hard q { color: var(--hard); }
+.cat li.soft q { color: var(--soft); }
+.cat .fix { font-size: 12.5px; color: var(--mute); padding-left: 19px; margin-top: 3px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+td { padding: 2px 0; vertical-align: baseline; }
+td.k { color: var(--mute); }
+td.v { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+td.b { width: 42%; padding-left: 10px; }
+.track { height: 7px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--mute); }
+tr.pick td.k { color: var(--ink); font-weight: 600; }
+tr.pick .track i { background: hsl(var(--h) 60% var(--edge-l)); }
+.note { color: var(--mute); font-size: 12.5px; line-height: 1.55; margin-top: 26px;
+  border-top: 1px solid var(--line); padding-top: 12px; }
+.flags li { font-size: 13px; }
+ul.plain { list-style: none; margin: 6px 0 0; padding: 0; }
+ul.plain li { margin: 3px 0; font-size: 13px; }
+ul.plain li::before { content: "· "; color: var(--mute); }
+.empty { color: var(--mute); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ripley</h1>
+  <span class="sub">paste a draft. it counts what the prose is made of.</span>
+  <span class="spacer"></span>
+  <select id="lang" title="language pack"><option value="">auto</option></select>
+  <label class="file">open file<input type="file" id="file" accept=".md,.txt,.markdown,.mdx,text/*"></label>
+  <button id="sample-bad">model default</button>
+  <button id="sample-good">human rewrite</button>
+  <button id="strip" title="cut what carries no meaning, and show what it cost">strip</button>
+  <button id="clear">clear</button>
+</header>
+
+<main>
+  <div class="editor">
+    <div class="layer" id="layer"></div>
+    <textarea id="input" spellcheck="false" placeholder="Paste the draft here."></textarea>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="strippane" id="strippane" hidden></div>
+  <div class="report" id="report"></div>
+</main>
+
+<script src="languages.js"></script>
+<script src="engine.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var input = document.getElementById('input');
+  var layer = document.getElementById('layer');
+  var report = document.getElementById('report');
+  var countEl = document.getElementById('count');
+  var strippane = document.getElementById('strippane');
+
+  /* which highlight layers are on */
+  var show = { tells: true, ADV: false, ADJ: false, NOMINAL: false, PASSIVE: false, NUM: false };
+  var muted = {};              /* category id -> hidden */
+  var current = null;
+
+  var POS_HUE = { ADV: 300, ADJ: 200, NOMINAL: 40, PASSIVE: 0, NUM: 140 };
+
+  function hueOf(catId) {
+    var c = Ripley.CATEGORIES.filter(function (x) { return x.id === catId; })[0];
+    return c ? c.hue : 265;
+  }
+
+
+  /* ------------------------------------------------------------- strip */
+  /* Delete what the rules say carries no meaning, heal the seam, and measure
+     what the prose lost. Three levels, because the useful question is not
+     "can this be cut" but "where does cutting start to cost".
+
+     Two things stop a cut. A flagged word that is a verb is a replacement,
+     not a deletion — "leverage" wants "use", and deleting it leaves the
+     sentence with no predicate. And an adjective sitting after a copula IS
+     the predicate. Both get held back and listed rather than removed. */
+
+  var stripOn = false, stripLevel = 2, showCuts = true, STRIP = null;
+
+  /* Categories that are a phrase you can delete outright. The rest — copula
+     avoidance, -ing tails, false ranges, rule of three — are rewrites, not
+     deletions, so stripping cannot touch them. */
+  var SCAFFOLD = { opener:1, recap:1, hedge:1, padding:1, weasel:1, signpost:1,
+    chatbot:1, cutoff:1, candid:1, announce:1, notjust:1, concession:1,
+    pivot:1, analogy:1, aphorism:1, excitement:1 };
+  var DECOR = { inflation:1, delve:1, filler:1 };
+
+  /* Words whose removal changes the claim rather than the temperature. */
+  var RESTRICTOR = /^(only|merely|mostly|most|many|much|few|fewer|several|some|all|every|each|both|half|last|latest|first|second|third|next|previous|prior|final|single|sole|lone|main|primary|net|gross|total|entire|whole|same|other|another|new|old|current|former|future|past|free|paid|local|global|public|private|daily|weekly|monthly|annual|per|enough)$/i;
+  var NEGATION = /^(not|never|no|none|nothing|nowhere|neither|nor|hardly|barely|scarcely|rarely|seldom)$/i;
+  var DEICTIC  = /^(today|yesterday|tomorrow|now|then|here|there|already|still|yet|again|once|twice|soon|later|earlier|early|late|always|often|usually|sometimes|abroad|home|ago|instead|ever)$/i;
+  var COMPARE  = /^(more|less|fewer|better|worse|best|worst|higher|lower|larger|smaller|faster|slower|greater|older|newer|longer|shorter|worth)$/i;
+  var PARTICLE = /^(ahead|back|away|out|off|apart|together|forward|along|around|through|across|else|even|too|aside|about|over|under)$/i;
+  var COPULA   = /^(is|are|was|were|be|been|being|am|become|becomes|became|becoming|seem|seems|seemed|remain|remains|remained|feel|feels|felt|look|looks|looked|stay|stays|stayed|sound|sounds|sounded|prove|proves|proved|appear|appears|appeared|grew|grow|grows)$/i;
+  var DEGREE   = /^(more|less|most|least|very|so|too|quite|rather|somewhat|far|much|as)$/i;
+  var SUBORD   = /^[ \t]*(that|which|who|whom|whose)\b/i;
+  var VERBSLOT = /^(that|which|who|to|can|could|will|would|may|might|must|shall|should|let|help|also)$/i;
+
+  /* The tagger misses "empower" and "leveraging". Position gives them away:
+     nothing but a verb follows "that" or "can", and only a gerund follows a
+     preposition. An -ly word is never in a verb slot, which keeps
+     "significantly" cuttable. */
+  function verbSlot(t, tokens, idx) {
+    if (/ly$/.test(t.lower)) return false;
+    var p = tokens[idx - 1];
+    if (!p || p.sentence !== t.sentence) return false;
+    if (p.tag === 'MODAL' || p.tag === 'AUX') return true;
+    if (VERBSLOT.test(p.lower)) return true;
+    if (p.tag === 'PREP' && /ing$/.test(t.lower)) return true;
+    return false;
+  }
+
+  /* Reasons a word survives the cut whatever the level says. */
+  function heldReason(t, tokens, idx) {
+    if (t.tag === 'VERB' || t.tag === 'AUX')
+      return 'a verb — the rule says swap it for a plain one, not delete it';
+    if (t.tag === 'ADJ') {
+      /* "the key is to..." — the tagger calls it an adjective, the sentence
+         uses it as its subject. Determiner before, verb after, so it is a head. */
+      var nxt = tokens[idx + 1], prv = tokens[idx - 1];
+      if (nxt && prv && nxt.sentence === t.sentence && prv.sentence === t.sentence &&
+          prv.tag === 'DET' && (COPULA.test(nxt.lower) || nxt.tag === 'AUX' || nxt.tag === 'MODAL'))
+        return 'reads as the head noun here, not a modifier';
+      for (var j = idx - 1; j >= 0 && idx - j < 4; j--) {
+        var p = tokens[j];
+        if (p.sentence !== t.sentence) break;
+        if (p.tag === 'ADV' || DEGREE.test(p.lower)) continue;
+        if (COPULA.test(p.lower)) return 'the predicate — cutting it leaves the sentence with no claim';
+        break;
+      }
+    }
+    if (t.tag === 'NOUN') {
+      var nx = tokens[idx + 1];
+      if (!nx || nx.sentence !== t.sentence || (nx.tag !== 'NOUN' && nx.tag !== 'PROPN'))
+        return 'the head of its phrase — reword it rather than delete it';
+    }
+    var w = t.lower;
+    if (t.tag === 'NUM' || t.tag === 'PROPN') return 'a number or a name';
+    if (NEGATION.test(w)) return 'a negation — cutting it reverses the sentence';
+    if (RESTRICTOR.test(w)) return 'restricts the claim — cutting it broadens it';
+    if (DEICTIC.test(w)) return 'fixes it in time or place';
+    if (PARTICLE.test(w)) return 'part of the verb, not a modifier of it';
+    if (COMPARE.test(w) || ((t.tag === 'ADJ' || t.tag === 'ADV') && /^[a-z]{4,}(er|est)$/.test(w)))
+      return 'a comparison — the sentence needs both sides';
+    return null;
+  }
+
+  var LEVEL_NOTE = {
+    1: 'Hard scaffolding only — openers, recaps, hedges, padding. Phrases that frame a claim without adding to it. Nothing here should cost meaning.',
+    2: 'Adds the empty modifiers the rules already flag: inflation, delve-class words, fancy-for-plain. These carry heat, not information.',
+    3: 'Adds every remaining adjective and adverb. The brutal level, and the point of it — read what survives, then read what was held back.'
+  };
+
+  /* Remove the spans, then repair what the removal broke: doubled spaces,
+     stranded commas, sentences reduced to a bare full stop. */
+  function heal(text, cuts) {
+    var out = '', at = 0;
+    cuts.forEach(function (c) { out += text.slice(at, c.start); at = c.end; });
+    out += text.slice(at);
+
+    out = out
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/[ \t]+([,;:.!?])/g, '$1')
+      .replace(/([,;:])[ \t]*(?=[,;:])/g, '')
+      .replace(/,[ \t]*(?=[.!?])/g, '')
+      .replace(/[ \t]*—[ \t]*(?=[.!?,;])/g, '')
+      .replace(/\([ \t]*\)/g, '')
+      /* a sentence that is now only punctuation */
+      .replace(/(^|\n)[ \t]*[.!?;,:—-]+[ \t]*/g, '$1')
+      .replace(/([.!?])[ \t]*[.!?;,:—-]+(?=[ \t]|$)/g, '$1')
+      .replace(/(^|[.!?]["')\]]?[ \t]+|\n)[ \t]*[,;:—-][ \t]*/g, '$1')
+      .replace(/[ \t]+$/gm, '')
+      .replace(/(^|\n)[ \t]+/g, '$1')
+      .replace(/\n{3,}/g, '\n\n');
+
+    out = out.replace(/(^|[.!?]["')\]]?\s+|\n)([a-z])/g, function (m, a, b) {
+      return a + b.toUpperCase();
+    });
+    return out.trim();
+  }
+
+  function buildStrip(r, level) {
+    var taken = [], held = [];
+    var tokens = r.pos.tokens;
+    var byStart = {}, i;
+    for (i = 0; i < tokens.length; i++) byStart[tokens[i].start] = i;
+
+    function holdToken(t, why) { held.push({ start: t.start, end: t.end, text: t.raw, why: why }); }
+    function spanTokens(a, b) {
+      var out = [];
+      for (var k = 0; k < tokens.length; k++) {
+        if (tokens[k].start >= b) break;
+        if (tokens[k].start >= a && tokens[k].end <= b) out.push(tokens[k]);
+      }
+      return out;
+    }
+
+    r.flags.forEach(function (f) {
+      var scaffold = SCAFFOLD[f.cat], decor = DECOR[f.cat];
+      if (!scaffold && !decor) return;
+      /* hard scaffolding goes at level 1; everything else waits for 2 */
+      var need = (scaffold && f.sev === 'hard') ? 1 : 2;
+      if (need > level) return;
+
+      /* A one-word decorative flag is the decoration, so it goes unless a
+         guard fires. A multi-word one is a replacement — "navigate the
+         complexities" wants "handle", "a testament to" wants "shows". Delete
+         those and the sentence loses the head it was built around. */
+      if (decor) {
+        var inSpan = spanTokens(f.start, f.end), head = null;
+        if (inSpan.length > 1) {
+          head = 'a phrase to reword, not delete — the sentence is built on what is inside it';
+        } else if (inSpan.length === 1) {
+          var one = inSpan[0], oi = byStart[one.start];
+          head = heldReason(one, tokens, oi) ||
+            (verbSlot(one, tokens, oi) ? 'sits in a verb slot — swap it for a plain verb, not nothing' : null);
+        }
+        if (head) {
+          held.push({ start: f.start, end: f.end, why: head,
+            text: r.text.slice(f.start, f.end).replace(/\s+/g, ' ').trim() });
+          return;
+        }
+      }
+      taken.push({ start: f.start, end: f.end, tier: 'safe',
+        why: scaffold ? 'scaffolding' : 'empty modifier', cat: f.cat });
+    });
+
+    if (level >= 3) {
+      tokens.forEach(function (t, idx) {
+        if (t.tag !== 'ADJ' && t.tag !== 'ADV') return;
+        if (held.some(function (hd) { return t.start >= hd.start && t.end <= hd.end; })) return;
+        var why = heldReason(t, tokens, idx);
+        if (why) { holdToken(t, why); return; }
+        taken.push({ start: t.start, end: t.end, tier: 'judgment',
+          why: t.tag === 'ADJ' ? 'adjective' : 'adverb', cat: t.tag });
+      });
+    }
+
+    taken.sort(function (a, b) { return a.start - b.start || b.end - a.end; });
+
+    /* overlaps first — a flagged phrase can swallow a tagged word */
+    var merged = [];
+    taken.forEach(function (c) {
+      var last = merged[merged.length - 1];
+      if (last && c.start <= last.end) { if (c.end > last.end) last.end = c.end; return; }
+      merged.push(c);
+    });
+
+    /* then list glue: "innovative, scalable, and robust" is one cut, not three,
+       or the heal is left holding ", , and" */
+    var glued = [];
+    merged.forEach(function (c) {
+      var last = glued[glued.length - 1];
+      if (last) {
+        var gap = r.text.slice(last.end, c.start);
+        if (gap.length <= 8 && /^[ \t]*,?[ \t]*(and|or)?[ \t]*$/i.test(gap)) {
+          last.end = c.end;
+          if (c.tier === 'judgment') last.tier = 'judgment';
+          return;
+        }
+      }
+      glued.push(c);
+    });
+
+    /* "innovative, scalable, and robust" with the first two gone leaves
+       ", and robust". Take the separator with the item. */
+    glued.forEach(function (c) {
+      var m = /^,[ \t]*(and|or)[ \t]+/i.exec(r.text.slice(c.end, c.end + 12));
+      if (m && c.start > 0 && /\s/.test(r.text.charAt(c.start - 1))) { c.end += m[0].length; return; }
+      var b = /,[ \t]*(and|or)[ \t]+$/i.exec(r.text.slice(Math.max(0, c.start - 12), c.start));
+      if (b) c.start -= b[0].length;
+    });
+
+    /* cutting "studies show" strands the "that" it governed */
+    glued.forEach(function (c) {
+      if (!SCAFFOLD[c.cat]) return;
+      var m = SUBORD.exec(r.text.slice(c.end, c.end + 12));
+      if (m) c.end += m[0].length;
+    });
+
+    /* swallow one trailing space so the heal has less to collapse */
+    glued.forEach(function (c) {
+      if (r.text.charAt(c.end) === ' ' && (c.start === 0 || /\s/.test(r.text.charAt(c.start - 1)))) c.end++;
+    });
+
+    /* Salvage pass. A sentence whose survivors have no subject left is not a
+       sentence any more — "To be fair, to consider." Drop the whole thing
+       rather than ship the stump. */
+    var sents = [];
+    tokens.forEach(function (t) {
+      var s = sents[t.sentence];
+      if (!s) sents[t.sentence] = { start: t.start, end: t.end, toks: [t] };
+      else { s.end = t.end; s.toks.push(t); }
+    });
+    function cutCovers(t) {
+      return glued.some(function (c) { return t.start >= c.start && t.end <= c.end; });
+    }
+    var drops = [];
+    sents.forEach(function (s) {
+      if (!s) return;
+      var touched = false, live = [];
+      s.toks.forEach(function (t) { if (cutCovers(t)) touched = true; else live.push(t); });
+      if (!touched) return;
+      var hasSubject = live.some(function (t) {
+        return t.tag === 'NOUN' || t.tag === 'PROPN' || t.tag === 'PRON' || t.tag === 'NUM';
+      });
+      if (hasSubject && live.length >= 3) return;
+      /* extend to the sentence terminator so no orphan full stop is left */
+      var end = s.end;
+      var tail = /^[^\S\n]*[.!?…]+["')\]]?/.exec(r.text.slice(end));
+      if (tail) end += tail[0].length;
+      drops.push({ start: s.start, end: end, tier: 'safe', why: 'emptied sentence', cat: 'sentence' });
+    });
+
+    if (drops.length) {
+      glued = glued.filter(function (c) {
+        return !drops.some(function (d) { return c.start >= d.start && c.end <= d.end; });
+      }).concat(drops).sort(function (a, b) { return a.start - b.start; });
+      held = held.filter(function (hd) {
+        return !drops.some(function (d) { return hd.start >= d.start && hd.end <= d.end; });
+      });
+    }
+
+    /* A dropped sentence and a phrase cut can straddle the same boundary —
+       "The catch?" as its own sentence, "The catch? Experts agree that" as one
+       weasel. Overlapping spans would make heal double back over the text, so
+       flatten them before anything reads the list. */
+    glued.sort(function (a, b) { return a.start - b.start || b.end - a.end; });
+    var flat = [];
+    glued.forEach(function (c) {
+      var last = flat[flat.length - 1];
+      if (last && c.start <= last.end) {
+        if (c.end > last.end) last.end = c.end;
+        if (c.cat === 'sentence') { last.cat = 'sentence'; last.why = 'emptied sentence'; last.tier = 'safe'; }
+        return;
+      }
+      flat.push(c);
+    });
+    glued = flat;
+
+    glued.forEach(function (c) { c.text = r.text.slice(c.start, c.end).replace(/\s+/g, ' ').trim(); });
+    held = held.filter(function (hd) {
+      return !glued.some(function (c) { return hd.start >= c.start && hd.end <= c.end; });
+    });
+
+    var text = heal(r.text, glued);
+    var after = Ripley.analyse(text, { lang: langSel.value || null });
+
+    return {
+      cuts: glued, held: held, text: text, before: r, after: after,
+      judgment: glued.filter(function (c) { return c.tier === 'judgment'; }).length,
+      dropped: drops.length
+    };
+  }
+
+  /* ------------------------------------------------------- strip report */
+
+  function fmtN(x, dp) { return dp ? Number(x).toFixed(dp) : String(Math.round(x)); }
+
+  /* dir: +1 when a rise is an improvement, -1 when a fall is, 0 for neutral */
+  function cmpRow(label, b, a, dp, dir) {
+    var delta = a - b, cls = 'flat', txt = '±0';
+    if (Math.abs(delta) >= (dp ? 0.05 : 0.5)) {
+      txt = (delta > 0 ? '+' : '−') + fmtN(Math.abs(delta), dp);
+      cls = dir ? ((delta * dir > 0) ? 'up' : 'down') : 'flat';
+    }
+    return '<tr><td class="k">' + label + '</td><td class="n">' + fmtN(b, dp) +
+      '</td><td class="n">' + fmtN(a, dp) + '</td><td class="d ' + cls + '">' + txt + '</td></tr>';
+  }
+
+  function lvlBtn(n, label) {
+    return '<button data-lvl="' + n + '" class="' + (stripLevel === n ? 'on' : '') + '">' +
+      n + ' · ' + label + '</button>';
+  }
+
+  function readMins(w) { return w / 238; }
+
+  function stripReport(r) {
+    var s = STRIP, a = s.after, h = [];
+    var hardBefore = r.flags.filter(function (f) { return f.sev === 'hard'; }).length;
+    var hardAfter = a.flags.filter(function (f) { return f.sev === 'hard'; }).length;
+    var pct = r.meta.words ? Math.round(100 * (1 - a.meta.words / r.meta.words)) : 0;
+
+    h.push('<h2>strip</h2>');
+    h.push('<div id="levels">' + lvlBtn(1, 'scaffolding') + lvlBtn(2, 'empty modifiers') +
+      lvlBtn(3, 'all modifiers') +
+      '<button data-cuts="1" class="' + (showCuts ? 'on' : '') + '">show cuts</button></div>');
+    h.push('<p class="lvl-note">' + LEVEL_NOTE[stripLevel] + '</p>');
+
+    if (!s.cuts.length) {
+      h.push('<p class="empty">Nothing to cut at this level.</p>');
+    } else {
+      h.push('<p class="loss"><b>' + pct + '% of the words go.</b> ' +
+        (s.dropped ? s.dropped + ' sentence' + (s.dropped > 1 ? 's' : '') + ' emptied out entirely. ' : '') +
+        (s.judgment ? s.judgment + ' cuts are judgment calls. ' : '') +
+        (s.held.length ? s.held.length + ' held back as load-bearing.' : '') + '</p>');
+    }
+
+    var rb = r.structure.readability, ra = a.structure.readability;
+    h.push('<table class="cmp"><tr><th>&nbsp;</th><th>before</th><th>after</th><th>Δ</th></tr>');
+    h.push(cmpRow('words', r.meta.words, a.meta.words, 0, -1));
+    h.push(cmpRow('sentences', r.meta.sentences, a.meta.sentences, 0, 0));
+    h.push(cmpRow('tells', r.flags.length, a.flags.length, 0, -1));
+    h.push(cmpRow('hard tells', hardBefore, hardAfter, 0, -1));
+    if (rb && ra) {
+      h.push(cmpRow('words / sentence', rb.wordsPerSentence, ra.wordsPerSentence, 1, -1));
+      h.push(cmpRow('flesch ease', rb.fleschEase, ra.fleschEase, 1, 1));
+      h.push(cmpRow('grade', rb.grade, ra.grade, 1, -1));
+    }
+    h.push(cmpRow('lexical density', r.pos.lexicalDensity, a.pos.lexicalDensity, 1, 0));
+    h.push(cmpRow('reading minutes', readMins(r.meta.words), readMins(a.meta.words), 1, -1));
+    h.push('</table>');
+
+    if (s.cuts.length) {
+      h.push('<h2>what went</h2><ul class="ledger">');
+      s.cuts.slice(0, 24).forEach(function (c) {
+        h.push('<li class="' + c.tier + '" data-at="' + c.start + '">' +
+          '<span class="tag">' + c.why + '</span><q>' + Ripley.escapeHtml(c.text) + '</q></li>');
+      });
+      if (s.cuts.length > 24) h.push('<li class="empty">… and ' + (s.cuts.length - 24) + ' more</li>');
+      h.push('</ul>');
+    }
+
+    h.push('<h2>what sense we lose</h2>');
+    if (s.held.length) {
+      h.push('<p class="lvl-note">Held back. Cutting these would change the claim, not ' +
+        'the temperature — so the strip left them alone.</p><ul class="ledger">');
+      s.held.slice(0, 20).forEach(function (hd) {
+        h.push('<li class="kept" data-at="' + hd.start + '">' +
+          '<span class="tag">kept</span><q>' + Ripley.escapeHtml(hd.text) + '</q>' +
+          '<span class="why">' + hd.why + '</span></li>');
+      });
+      if (s.held.length > 20) h.push('<li class="empty">… and ' + (s.held.length - 20) + ' more</li>');
+      h.push('</ul>');
+    } else if (stripLevel < 3) {
+      h.push('<p class="empty">Nothing at this level. Every cut above is a phrase the rules ' +
+        'class as frame or filler. Push to level 3 to see where meaning starts to go.</p>');
+    } else {
+      h.push('<p class="empty">No load-bearing modifiers found. Every adjective and adverb ' +
+        'in this draft was decoration.</p>');
+    }
+    if (rb && ra && a.meta.words < r.meta.words && ra.fleschEase < rb.fleschEase) {
+      h.push('<p class="lvl-note"><b>Fewer words, and harder ones.</b> The filler that went was ' +
+        'the easy part of the sentence, so the reading score falls even as the length does. ' +
+        'Stripping alone does not make this prose plain — the held-back list is where the ' +
+        'rewriting has to start.</p>');
+    }
+    if (s.judgment) {
+      h.push('<p class="lvl-note">The ' + s.judgment + ' amber cuts are judgment calls — plain ' +
+        'adjectives and adverbs with nothing on the lists against them. Read those sentences in ' +
+        'the middle pane and decide whether they still say what you meant.</p>');
+    }
+    return h.join('');
+  }
+
+  /* ------------------------------------------------------------ rendering */
+
+  function spansFor(r) {
+    var out = [];
+    /* In strip mode the highlight layers go off — the only question on the
+       page is what survives the cut. */
+    if (stripOn) {
+      if (!STRIP || !showCuts) return out;
+      STRIP.cuts.forEach(function (c) {
+        out.push({ start: c.start, end: c.end, cls: 'cut ' + c.tier,
+          style: '--h:' + (c.tier === 'judgment' ? 40 : 2),
+          title: c.why + ' — cut' });
+      });
+      STRIP.held.forEach(function (hd) {
+        out.push({ start: hd.start, end: hd.end, cls: 'kept', style: '--h:150',
+          title: 'kept — ' + hd.why });
+      });
+      return out;
+    }
+    if (show.tells) {
+      r.flags.forEach(function (f) {
+        if (muted[f.cat]) return;
+        out.push({ start: f.start, end: f.end,
+          cls: 'tell sev-' + f.sev, style: '--h:' + hueOf(f.cat),
+          title: f.cat + ' — ' + f.note + '  →  ' + f.fix });
+      });
+    }
+    r.pos.tokens.forEach(function (t) {
+      var on = (show.ADV && t.tag === 'ADV') || (show.ADJ && t.tag === 'ADJ') ||
+               (show.NUM && t.tag === 'NUM') || (show.NOMINAL && t.nominal);
+      if (!on) return;
+      var h = t.nominal && show.NOMINAL ? POS_HUE.NOMINAL : POS_HUE[t.tag] || 265;
+      out.push({ start: t.start, end: t.end, cls: 'pos', style: '--h:' + h,
+        title: t.tag + (t.nominal ? ' · nominalisation' : '') + ' (' + t.src + ')' });
+    });
+    if (show.PASSIVE) {
+      r.structure.passive.spans.forEach(function (s) {
+        out.push({ start: s.start, end: s.end, cls: 'pos', style: '--h:' + POS_HUE.PASSIVE,
+          title: 'passive construction' });
+      });
+    }
+    return out;
+  }
+
+  /* Same cut-at-every-boundary trick the engine uses, but emitting inline
+     custom properties so one stylesheet can colour every category. */
+  function paint(text, spans) {
+    var opens = {}, closes = {}, cut = {};
+    cut[0] = true; cut[text.length] = true;
+    spans.forEach(function (s) {
+      if (!(s.end > s.start)) return;
+      (opens[s.start] = opens[s.start] || []).push(s);
+      (closes[s.end] = closes[s.end] || []).push(s);
+      cut[s.start] = true; cut[s.end] = true;
+    });
+    var cuts = Object.keys(cut).map(Number).sort(function (a, b) { return a - b; });
+    var active = [], out = [];
+    for (var i = 0; i < cuts.length - 1; i++) {
+      var at = cuts[i];
+      if (closes[at]) active = active.filter(function (s) { return closes[at].indexOf(s) === -1; });
+      if (opens[at]) active = active.concat(opens[at]);
+      var chunk = Ripley.escapeHtml(text.slice(at, cuts[i + 1]));
+      if (!active.length) { out.push(chunk); continue; }
+      var cls = [], style = [], title = [];
+      active.forEach(function (s) {
+        if (cls.indexOf(s.cls) === -1) cls.push(s.cls);
+        if (style.indexOf(s.style) === -1) style.push(s.style);
+        if (s.title) title.push(s.title);
+      });
+      out.push('<mark class="' + cls.join(' ') + '" style="' + style[style.length - 1] +
+        '" data-at="' + at + '" title="' + Ripley.escapeHtml(title.join('\n')) + '">' + chunk + '</mark>');
+    }
+    return out.join('') + '\n ';
+  }
+
+  /* The middle pane: the draft with the dead weight actually gone, set as
+     prose rather than as a diff, because the test is whether it still reads. */
+  function drawEssence(r) {
+    if (!stripOn || !STRIP) { strippane.hidden = true; return; }
+    strippane.hidden = false;
+    var s = STRIP, mins = readMins(s.after.meta.words);
+    strippane.innerHTML =
+      '<div class="pane-h"><span>essence</span><span class="spacer"></span><span>' +
+      s.after.meta.words + 'w · ' + (mins < 1 ? '<1' : Math.round(mins)) + ' min</span>' +
+      '<button id="copy-essence">copy</button></div>' +
+      (s.text ? '<div class="essence">' + Ripley.escapeHtml(s.text) + '</div>'
+              : '<div class="essence empty-out">Nothing left.</div>');
+    var cp = document.getElementById('copy-essence');
+    if (cp) cp.onclick = function () {
+      navigator.clipboard.writeText(s.text).then(function () {
+        cp.textContent = 'copied';
+        setTimeout(function () { cp.textContent = 'copy'; }, 1200);
+      }, function () { cp.textContent = 'blocked'; });
+    };
+  }
+
+  /* -------------------------------------------------------------- report */
+
+  function num(x, d) { return Number(x).toFixed(d === undefined ? 1 : d); }
+
+  function row(label, value, share, hue, pick) {
+    return '<tr class="' + (pick ? 'pick' : '') + '" style="--h:' + (hue || 0) + '">' +
+      '<td class="k">' + label + '</td><td class="v">' + value + '</td>' +
+      '<td class="b"><div class="track"><i style="width:' +
+      Math.min(100, share) + '%"></i></div></td></tr>';
+  }
+
+  function draw(r) {
+    current = r;
+    STRIP = stripOn ? buildStrip(r, stripLevel) : null;
+    drawEssence(r);
+    layer.innerHTML = paint(r.text, spansFor(r));
+    layer.scrollTop = input.scrollTop;
+    countEl.textContent = r.meta.words + ' words · ' + r.meta.sentences + ' sentences';
+
+    var v = r.verdict, lg = r.language, h = [];
+    h.push('<div class="verdict"><span class="badge ' + v.level + '">' + v.level + '</span>' +
+      '<span class="lang">' + (lg.name
+        ? '<b>' + lg.name + '</b>' + (lg.method === 'told' ? ' · forced'
+            : ' · ' + Math.round(lg.confidence * 100) + '% sure')
+        : (lg.script ? lg.script + ' script · no pack' : 'language unknown')) +
+      (lg.tellsFrom === 'translated' ? ' · tells translated, not measured' : '') +
+      '</span></div>');
+    h.push('<p style="margin:0 0 2px;color:var(--mute);font-size:13.5px">' +
+      Ripley.escapeHtml(v.line) + '</p>');
+    if (v.structural.length) {
+      h.push('<ul class="plain">' + v.structural.map(function (s) {
+        return '<li>' + Ripley.escapeHtml(s) + '</li>'; }).join('') + '</ul>');
+    }
+
+    if (stripOn) h.push(stripReport(r));
+
+    /* layer switches */
+    if (!stripOn) h.push('<h2>highlight</h2><div id="switches">' +
+      sw('tells', 'tells') + sw('ADV', 'adverbs') + sw('ADJ', 'adjectives') +
+      sw('NOMINAL', 'nominalisations') + sw('PASSIVE', 'passive') + sw('NUM', 'numbers') +
+      '</div>');
+
+    /* tells */
+    h.push('<h2>tells &nbsp;<span style="text-transform:none;letter-spacing:0">' +
+      (lg.tagged && r.flags.length ? r.flags.length + ' in ' + r.categories.length + ' categories' : '') +
+      '</span></h2>');
+    if (!lg.tagged) {
+      h.push('<p class="warn">No pack for this language, so no tells and no word ' +
+        'classes. Everything below the fold — paragraph shape, punctuation, layout — ' +
+        'does not depend on the language and still holds. Force a pack from the ' +
+        'menu up top if the guess is wrong.</p>');
+    } else if (!r.categories.length) {
+      h.push('<p class="empty">Nothing on the list fired.</p>');
+    }
+    r.categories.forEach(function (c) {
+      h.push('<div class="cat" style="--h:' + c.hue + '" data-cat="' + c.id + '">' +
+        '<div class="head"><span class="swatch"></span>' +
+        '<span class="name" style="' + (muted[c.id] ? 'opacity:.4' : '') + '">' + c.label + '</span>' +
+        '<span class="n">' + c.n + (c.hard ? ' · ' + c.hard + ' hard' : '') + '</span>' +
+        (c.tell ? '<span class="tellno">tell #' + c.tell + '</span>' : '') + '</div>' +
+        '<ul>' + c.hits.slice(0, 8).map(function (f) {
+          return '<li class="' + f.sev + '" data-at="' + f.start + '">' +
+            '<span class="loc">' + f.line + ':' + f.col + '</span>' +
+            '<q>' + Ripley.escapeHtml(f.text) + '</q></li>';
+        }).join('') +
+        (c.hits.length > 8 ? '<li class="empty">… and ' + (c.hits.length - 8) + ' more</li>' : '') +
+        '</ul><div class="fix">' + Ripley.escapeHtml(c.hits[0].fix || '') + '</div></div>');
+    });
+
+    /* word classes */
+    var p = r.pos, w = r.meta.words || 1;
+    if (lg.tagged) {
+    h.push('<h2>word classes</h2><table>');
+    [['NOUN', 'nouns'], ['VERB', 'verbs'], ['ADJ', 'adjectives'], ['ADV', 'adverbs'],
+     ['PROPN', 'proper nouns'], ['NUM', 'numbers'], ['DET', 'determiners'],
+     ['PRON', 'pronouns'], ['PREP', 'prepositions'], ['CONJ', 'conjunctions'],
+     ['AUX', 'be / have / do'], ['MODAL', 'modals']].forEach(function (t) {
+      var n = p.counts[t[0]] || 0, share = (100 * n) / w;
+      h.push(row(t[1], n + ' &nbsp;' + num(share) + '%', share * 2.2,
+        POS_HUE[t[0]] || 0, t[0] === 'ADJ' || t[0] === 'ADV'));
+    });
+    h.push('</table><table style="margin-top:10px">');
+    h.push(row(lg.adverbLabel, p.lyAdverbs + ' &nbsp;' + num(p.lyPer100, 2) + '/100w', p.lyPer100 * 12, POS_HUE.ADV, true));
+    h.push(row('nominalisations', p.nominalisations + ' &nbsp;' + num(p.nominalPer100, 2) + '/100w', p.nominalPer100 * 8, POS_HUE.NOMINAL, true));
+    h.push(row('passive', r.structure.passive.count + ' &nbsp;' + num(r.structure.passive.perSentence, 2) + '/sent', r.structure.passive.perSentence * 100, 0, true));
+    h.push(row('lexical density', num(p.lexicalDensity) + '%', p.lexicalDensity, 0, false));
+    h.push('</table>');
+    h.push('<p class="empty" style="margin-top:6px">' + num(p.resolved.lex) + '% of words came from a word list, ' +
+      num(p.resolved.suffix) + '% from a suffix, ' + num(p.resolved.context) + '% from position, ' +
+      num(p.resolved.guess) + '% from a bare guess. ' + Ripley.escapeHtml(lg.taggerNote) + '.</p>');
+    }
+
+    /* structure */
+    var s = r.structure, rh = s.rhythm;
+    h.push('<h2>rhythm</h2>');
+    if (rh.enough) {
+      h.push('<table>');
+      h.push(row('mean sentence', num(rh.mean) + ' words', rh.mean * 2.5, 0));
+      h.push(row('spread (sd/mean)', num(rh.spread, 2), rh.spread * 80, 0, true));
+      h.push(row('under 9 words', num(rh.shortShare) + '%', rh.shortShare * 2, 0, true));
+      h.push(row('in the 12–25 band', num(rh.bandShare) + '%', rh.bandShare, 0, true));
+      h.push(row('shortest / longest', rh.min + ' / ' + rh.max, 0, 0));
+      h.push('</table>');
+      if (rh.baseline) {
+        h.push('<p class="empty" style="margin-top:8px">measured baselines — ' +
+          rh.baseline.map(function (b) {
+            return b.name + ' ' + num(b.cv, 2) + ' / ' + num(b.short) + '% / ' + num(b.band) + '%';
+          }).join(' &nbsp;·&nbsp; ') + '</p>');
+      } else {
+        h.push('<p class="empty" style="margin-top:8px">No measured baseline for this ' +
+          'language, so the numbers above carry no verdict. They still compare between ' +
+          'two of your own drafts.</p>');
+      }
+      if (rh.baseline && rh.flags.length) {
+        h.push('<ul class="plain">' + rh.flags.map(function (f) {
+          return '<li>' + Ripley.escapeHtml(f) + '</li>'; }).join('') + '</ul>');
+        if (rh.flags.length < 3) h.push('<p class="empty">One marker is a style. All three is the tell.</p>');
+      } else if (rh.baseline) {
+        h.push('<p class="empty">Spread is in human range.</p>');
+      }
+    } else {
+      h.push('<p class="empty">Not enough prose to measure — needs about ten sentences inside full paragraphs.</p>');
+    }
+
+    h.push('<h2>shape</h2><table>');
+    h.push(row('paragraphs', s.paragraphs.count + ' &nbsp;mean ' + num(s.paragraphs.mean) + 'w', 0, 0));
+    h.push(row('paragraph spread', num(s.paragraphs.spread, 2) + ' &nbsp;' + s.paragraphs.shortest + '–' + s.paragraphs.longest + 'w', s.paragraphs.spread * 80, 0, true));
+    h.push(row('one-sentence paragraphs', String(s.paragraphs.singleSentence), 0, 0));
+    h.push(row('em-dashes', s.punctuation.emDash + ' &nbsp;' + num(s.punctuation.emDashPer100, 2) + '/100w', s.punctuation.emDashPer100 * 25, 0));
+    h.push(row('semicolons / questions', s.punctuation.semicolon + ' / ' + s.punctuation.question, 0, 0));
+    h.push(row('openers This/It/There', s.openers.thisItThere + ' of ' + s.openers.total, (100 * s.openers.thisItThere) / (s.openers.total || 1) * 2, 0, true));
+    h.push(row('openers And/But/So', s.openers.andButSo + ' of ' + s.openers.total, (100 * s.openers.andButSo) / (s.openers.total || 1) * 2, 0));
+    if (s.readability) {
+      h.push(row('Flesch ease / grade', num(s.readability.fleschEase) + ' / ' + num(s.readability.grade), s.readability.fleschEase, 0));
+    }
+    h.push('</table>');
+
+    if (s.sections.length) {
+      var mx = Math.max.apply(null, s.sections.map(function (x) { return x.words; }));
+      h.push('<h2>sections</h2><table>');
+      s.sections.forEach(function (sec) {
+        h.push(row(Ripley.escapeHtml(sec.title), sec.words + 'w', (100 * sec.words) / mx, 0));
+      });
+      h.push('</table>');
+      if (s.sectionsSymmetric === true) {
+        h.push('<p class="empty">All within 20% of each other. That is an outline, not an essay.</p>');
+      } else if (s.sectionsSymmetric === false) {
+        h.push('<p class="empty">Lopsided, which is what attention actually looks like.</p>');
+      }
+    }
+
+    var lay = s.layout, bits = [];
+    if (lay.titleCaseHeadings.length) bits.push(lay.titleCaseHeadings.length + ' Title Case headings');
+    if (lay.furnitureHeadings.length) bits.push('headings that would fit any topic: ' + lay.furnitureHeadings.join(', '));
+    if (lay.emojiBullets) bits.push(lay.emojiBullets + ' emoji bullets');
+    if (lay.boldHeaderLists) bits.push(lay.boldHeaderLists + ' inline-header list items');
+    if (bits.length) {
+      h.push('<h2>layout</h2><ul class="plain">' + bits.map(function (b) {
+        return '<li>' + Ripley.escapeHtml(b) + '</li>'; }).join('') + '</ul>');
+    }
+
+    h.push('<p class="note">The tell lists are exact — they are word and phrase lists, ' +
+      'and a hit is a hit. The word classes are a suffix-and-lexicon guess with no ' +
+      'dictionary behind them; treat them as an order of magnitude. Only the rhythm ' +
+      'baselines were measured, over 11,522 sentences from three essayists. ' +
+      'Everything else is a convention, and a draft is allowed to break one on purpose.' +
+      '<br><br>Passing these checks is not the same as being worth reading.</p>');
+
+    report.innerHTML = h.join('');
+    wire();
+  }
+
+  function sw(key, label) {
+    return '<button data-sw="' + key + '" class="' + (show[key] ? 'on' : '') + '">' + label + '</button>';
+  }
+
+  function wire() {
+    report.querySelectorAll('[data-sw]').forEach(function (b) {
+      b.onclick = function () { show[b.dataset.sw] = !show[b.dataset.sw]; draw(current); };
+    });
+    report.querySelectorAll('.cat .head').forEach(function (el) {
+      el.onclick = function () {
+        var id = el.parentNode.dataset.cat;
+        muted[id] = !muted[id];
+        draw(current);
+      };
+    });
+    report.querySelectorAll('.cat li[data-at]').forEach(function (li) {
+      li.onclick = function () { jump(Number(li.dataset.at)); };
+    });
+    report.querySelectorAll('[data-lvl]').forEach(function (b) {
+      b.onclick = function () { stripLevel = Number(b.dataset.lvl); draw(current); };
+    });
+    report.querySelectorAll('[data-cuts]').forEach(function (b) {
+      b.onclick = function () { showCuts = !showCuts; draw(current); };
+    });
+    report.querySelectorAll('.ledger li[data-at]').forEach(function (li) {
+      li.onclick = function () { jump(Number(li.dataset.at)); };
+    });
+  }
+
+  function jump(offset) {
+    input.focus();
+    input.setSelectionRange(offset, offset);
+    /* put the hit near the top of the pane */
+    var before = current.text.slice(0, offset).split('\n').length;
+    var lines = Math.max(1, current.text.split('\n').length);
+    input.scrollTop = Math.max(0, (input.scrollHeight * (before - 1)) / lines - input.clientHeight / 3);
+    layer.scrollTop = input.scrollTop;
+  }
+
+  /* ---------------------------------------------------------------- glue */
+
+  var langSel = document.getElementById('lang');
+  Ripley.languages.codes().forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = c; o.textContent = Ripley.languages.PACKS[c].name;
+    langSel.appendChild(o);
+  });
+  langSel.onchange = function () { run(); };
+
+  var timer = null;
+  function analyse() {
+    return Ripley.analyse(input.value, { lang: langSel.value || null });
+  }
+  function run() {
+    clearTimeout(timer);
+    timer = setTimeout(function () { draw(analyse()); }, 180);
+  }
+
+  input.addEventListener('input', run);
+  input.addEventListener('scroll', function () { layer.scrollTop = input.scrollTop; layer.scrollLeft = input.scrollLeft; });
+
+  document.getElementById('file').addEventListener('change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () { input.value = String(fr.result); run(); };
+    fr.readAsText(f);
+  });
+  document.getElementById('clear').onclick = function () { input.value = ''; run(); input.focus(); };
+
+  var stripBtn = document.getElementById('strip');
+  var mainEl = document.querySelector('main');
+  stripBtn.onclick = function () {
+    stripOn = !stripOn;
+    stripBtn.classList.toggle('on', stripOn);
+    mainEl.classList.toggle('strip', stripOn);
+    draw(current || analyse());
+  };
+
+  var SAMPLE_BAD =
+    "In today's rapidly evolving digital landscape, effective communication has " +
+    "become more crucial than ever. It's not just about conveying information — " +
+    "it's about forging meaningful connections. Moreover, studies show that clear " +
+    "writing can significantly enhance engagement. Ultimately, by leveraging these " +
+    "powerful strategies, you can unlock your full potential as a communicator.\n\n" +
+    "Let's dive in. The key is to delve into the rich tapestry of modern " +
+    "communication, showcasing innovative, scalable, and robust approaches that " +
+    "empower teams to navigate the complexities of the modern workplace. It's " +
+    "worth noting that results may vary. Think of it like a bridge between minds, " +
+    "fostering collaboration and driving meaningful outcomes.\n\n" +
+    "The catch? Experts agree that this remains a multifaceted challenge. To be " +
+    "fair, there are many factors to consider. At the end of the day, the " +
+    "remarkable thing is that great writing serves as a testament to clarity.";
+
+  var SAMPLE_GOOD =
+    "Most writing is worse than it needs to be because the writer is trying to " +
+    "sound impressive. Don't. Say what you mean in the plainest words that carry " +
+    "it, and read it aloud before you send it. If a sentence isn't something " +
+    "you'd say to a friend, rewrite it until it is. That one habit will put you " +
+    "ahead of most people who write for a living.\n\n" +
+    "I learned this the slow way. My first year writing docs I turned in a page " +
+    "about a caching layer that used the word \"leverage\" four times, and my " +
+    "editor sent it back with one note: say what it does. It stores the last " +
+    "thousand answers so the database doesn't get asked twice. Nine words. That " +
+    "was the whole page.\n\n" +
+    "The habit generalises badly to poetry and well to everything else.";
+
+  document.getElementById('sample-bad').onclick = function () { input.value = SAMPLE_BAD; run(); };
+  document.getElementById('sample-good').onclick = function () { input.value = SAMPLE_GOOD; run(); };
+
+  if (window.RIPLEY_SEED && window.RIPLEY_SEED.text) {
+    input.value = window.RIPLEY_SEED.text;
+    if (window.RIPLEY_SEED.label) {
+      document.querySelector('header .sub').textContent = window.RIPLEY_SEED.label;
+    }
+  } else {
+    input.value = SAMPLE_BAD;
+  }
+  draw(analyse());
+})();
+</script>
+</body>
+</html>

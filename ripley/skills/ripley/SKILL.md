@@ -1,5 +1,5 @@
 ---
-name: human-writing
+name: ripley
 description: >-
   Write and edit prose that reads like a thoughtful person wrote it, not a
   language model — essays, blog posts, newsletters, emails, docs, READMEs,
@@ -7,11 +7,16 @@ description: >-
   any non-code prose meant for human readers, and especially when asked to make
   writing "sound human," "less like AI," "less generic," "less corporate," or
   "more like me," or to write in the voice of Paul Graham, Benedict Evans, or
-  Henrik Karlsson, or in a restrained Economist/Bloomberg analyst register.
-  Built from close analysis of 700+ of their essays.
+  Henrik Karlsson, or in a restrained Economist/Bloomberg analyst register. Use
+  it also to check, lint, or measure prose someone already has — AI tells,
+  adverb and adjective counts, sentence rhythm, paragraph and section shape —
+  either with the bundled command-line checker or the browser app for pasted
+  text. The checker reads English, Ukrainian and Russian, and says so plainly
+  when it has no pack for a language rather than guessing. Built from close
+  analysis of 700+ essays.
 ---
 
-# Human writing
+# Ripley
 
 Most machine-written prose fails the same way: it is grammatical, organized, and
 dead. It hedges everything, states nothing, decorates instead of arguing, and
@@ -22,6 +27,9 @@ reading*.
 
 The whole target, in one line from Paul Graham: **don't let a sentence through
 unless it's the way you'd say it to a friend.**
+
+Named for Patricia Highsmith's Tom Ripley, who studied people until he could pass
+for them. Same job, narrower crime.
 
 ## When to use this
 
@@ -73,9 +81,12 @@ under their name is not.
    Sections within 20% of each other in length mean you wrote an outline, not an
    essay. Force lopsidedness, delete a whole section, and check the ending isn't
    fully implied by the opening. See `references/structure-tells.md`.
-7. **Run the checklist.** Before delivering, pass it against
-   `references/revision-checklist.md`. For the rhythm check you can measure instead
-   of guessing: `python3 scripts/rhythm.py draft.md`.
+7. **Measure, then run the checklist.** Write the draft to a file and run
+   `node scripts/ripley.js draft.md`. It flags every tell below with a line and
+   column, counts adverbs, adjectives and nominalisations, and puts the sentence
+   rhythm next to the measured corpus baselines. Fix what it finds and re-run.
+   Then pass the draft against `references/revision-checklist.md` by hand — the
+   checker sees words and shapes, never whether the piece has a claim.
 
 Loose then tight. The first draft is for you; every draft after is for the reader.
 
@@ -245,6 +256,84 @@ principles disagree, the profile wins. It's their voice, not the skill's.
 
 ---
 
+## Check the draft
+
+Two ways in, one set of rules.
+
+**From the terminal**, on a file or on stdin:
+
+```
+node scripts/ripley.js draft.md
+node scripts/ripley.js draft.md --html /tmp/draft.html   # a page you can open
+node scripts/ripley.js draft.md --lang uk                # override the guess
+cat draft.md | node scripts/ripley.js --quiet
+```
+
+It prints four blocks. **Tells** — every match from `anti-ai-tells.md` with a line
+and column, split into hard (cut it) and soft (depends). **Word classes** —
+adverbs, adjectives, nominalisations and the rest, with the share of words the
+tagger knew against the share it guessed. **Structure** — sentence rhythm beside
+the measured baselines, paragraph spread, words per section, sentence openers,
+em-dash rate, passives. Then a **verdict**, which counts categories rather than
+hits, because one marker is a style and a cluster is a confession.
+
+**In a browser**, for text you want to paste and poke at: open `app/index.html`.
+Same engine, live. It highlights every tell in place, switches adverbs,
+adjectives, nominalisations and passives on as separate layers, and jumps the
+cursor to a hit when you click it. It loads nothing and sends nothing anywhere.
+
+### Languages
+
+English, Ukrainian and Russian have packs. The language is detected from the
+script and a stopword vote; `--lang` overrides it, and the browser app has a
+picker. Run `node scripts/ripley.js --languages` for the list.
+
+Anything else gets the metrics that survive translation — paragraph shape,
+sentence spread, punctuation, layout — and an explicit refusal on the rest. A
+German draft comes back saying it has no pack, not scored against English word
+lists. That refusal is the feature: silently running English rules over
+Ukrainian would produce a full report of meaningless numbers.
+
+Two things differ outside English. There are no measured rhythm baselines, so
+the spread numbers are reported without a verdict; they still compare two of
+your own drafts. And the tell lists are translations of the English one — a
+hypothesis about what generated Ukrainian sounds like, not a measurement — which
+every report says out loud.
+
+### What the numbers are worth
+
+The tell lists are exact, because they are word and phrase lists and a hit is a
+hit. Only the rhythm baselines were measured, over 11,522 sentences of English.
+
+The word classes are a suffix-and-lexicon guess with no dictionary behind them.
+On the bundled corpus they agree with a Claude reference on 75% of sampled
+content words — 79% in English, 71% in Russian, 72% in Ukrainian, n=81. That is
+agreement, not accuracy: where both are wrong the same way it reads as success.
+Good enough to compare two drafts. Not good enough to quote.
+
+Everything else is a convention, and a draft may break one on purpose.
+
+### Tests
+
+`node tests/run.js` is the one to run after changing a rule: 248 deterministic
+checks, no network, no cost. It holds the English rhythm numbers to `rhythm.py`,
+proves flag offsets index the original string, and catches the failure mode that
+global regexes invite — analysing the same text twice and getting different
+answers.
+
+`node tests/oracle.js` is the other half, and it costs money. It batches the
+whole corpus into one `claude -p` call and reports where the heuristics and the
+model disagree, on language, on tells, on word class. Read the disagreements,
+not the percentage: two fallible judges agreeing may only mean they share a
+bias. It found six real defects the fixed expectations could not.
+
+The limit is the obvious one. A draft edited until the checker goes quiet is a
+draft that satisfies the checker. It still cannot tell you whether the piece has
+a claim, whether the ending was implied by the opening, or whether anyone needed
+to read it. Those are steps 2 and 6.
+
+---
+
 ## What's in this skill
 
 | File | Read it when |
@@ -258,7 +347,13 @@ principles disagree, the profile wins. It's their voice, not the skill's.
 | `references/voice-paul-graham.md`, `-benedict-evans.md`, `-henrik-karlsson.md` | The user named a writer. |
 | `references/voice-analyst.md` | Restrained, impersonal, thesis-first explanation. *Economist* / Bloomberg register. |
 | `references/voice-from-sample.md` | The user wants their own voice. |
-| `scripts/rhythm.py` | Measure sentence-length spread instead of guessing at it. |
+| `scripts/ripley.js` | Check a draft from the terminal: tells with line numbers, word classes, structure. Needs Node. |
+| `app/index.html` | The same check in a browser, for text you paste. Open the file; nothing to install. |
+| `app/engine.js` | The language-agnostic core. Masking, splitting, counting, shape. |
+| `app/languages.js` | One pack per language: word lists, suffix rules, tell phrases. Add a language here and nothing else changes. |
+| `tests/run.js` | 248 deterministic checks. Run after touching a rule. |
+| `tests/oracle.js` | The model-graded half. One batched `claude -p` call; costs money. |
+| `scripts/rhythm.py` | The rhythm slice alone, in Python, for when Node isn't around. |
 
 ---
 
